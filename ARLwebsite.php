@@ -61,7 +61,7 @@ if (isset($_POST['add'])) {
 if (isset($_GET['delete'])) {
     $ID = $_GET['delete'];
     $TYPE = $_GET['type'];
-    $mysqli->query("DELETE FROM animals WHERE id=$ID") or die($mysqli->error());
+    $mysqli->query("DELETE FROM animals WHERE id=$ID");
     $_SESSION['message'] = "Record has been deleted!";
     $_SESSION['msg_type'] = "danger";
     if ($TYPE == "cat") {
@@ -80,7 +80,7 @@ if(isset($_POST['updatedata'])) {
     $TYPE = $_POST['type'];
     $GENDER = $_POST['gender'];
 
-    $query = ("UPDATE animals SET gender = '$GENDER', name = '$NAME', age = '$AGE' , breed = '$BREED', type = '$TYPE' WHERE id = '$ID'")or die($mysqli->error());
+    $query = ("UPDATE animals SET gender = '$GENDER', name = '$NAME', age = '$AGE' , breed = '$BREED', type = '$TYPE' WHERE id = '$ID'");
     $query_run = mysqli_query($mysqli,$query);
 
     if($query_run){

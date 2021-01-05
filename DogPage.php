@@ -42,6 +42,22 @@ require_once("DatabaseConnection.php");
     tr:nth-child(even) {
       background-color: #dddddd;
     }
+
+    .pagingSection {
+      text-align: center;
+    }
+
+    .pagingSection p {
+      display: inline-block;
+    }
+
+    .pageLeft {
+      margin-right: 25px;
+    }
+
+    .pageRight {
+      margin-left: 25px;
+    }
   </style>
 </head>
 
@@ -102,15 +118,14 @@ if (isset($_SESSION['message'])): ?>
           <h1 class="text-center">Available Dogs</h1>
           <div style="display: block; text-align:center; margin-bottom: 30px;">
             <div class="searchBar" style="display: inline-block;">
-              <form action="ARLwebsite.php" method="POST" enctype="multipart/form-data">
-                <input type="text" name="searchBar" placeholder="Search by...">
+              <form>
+                <input type="text" class="searchBarInput" name="searchBarInput" placeholder="Search by...">
                 <select name="searchType" id="searchType">
                   <option value="Name">Name</option>
                   <option value="Age">Age</option>
                   <option value="Breed">Breed</option>
                   <option value="Gender">Gender</option>
                 </select>
-                <button class="btn btn-indigo" name="search">Search</button>
               </form>
             </div>
           </div>
@@ -158,27 +173,30 @@ if (isset($_SESSION['message'])): ?>
                   <th>Gender</th>
                 </tr>
               </thead>
-              <?php
-while ($row = $result->fetch_assoc()):
- ?>
-              <tr>
-                <td style="display:none;"><?php echo $row['id'] ?></td>
-                <td><img src="<?php echo $row['image1'] ?>" width="200px" height="200px"></td>
-                <td><?php echo $row['name'] ?></td>
-                <td><?php echo $row['breed'] ?></td>
-                <td><?php echo $row['age'] ?></td>
-                <td><?php echo $row['gender'] ?></td>
-                <td style="display:none;"><?php echo $row['description'] ?></td>
-                <td><a href="Profile.php?id=<?php echo $row['id']?>" class="btn btn-default">View Profile</a></td>
-                <?php if (empty($_SESSION["email"]) == false) { ?>
-                <td><button type="button" class="btn btn-info editbtn">Edit</button></td>
-                <td><a href="ARLwebsite.php?delete=<?php echo $row['id']; ?>&type=dog" class="btn btn-danger">Delete</a>
-                </td>
-                <?php } ?>
-              </tr>
-              <?php
-endwhile; ?>
+              <tbody class="dataContainer">
+                <?php while ($row = $result->fetch_assoc()):?>
+                  <tr class="dataRow">
+                    <td style="display:none;"><?php echo $row['id'] ?></td>
+                    <td><img src="<?php echo $row['image1'] ?>" width="200px" height="200px"></td>
+                    <td><?php echo $row['name'] ?></td>
+                    <td><?php echo $row['breed'] ?></td>
+                    <td><?php echo $row['age'] ?></td>
+                    <td><?php echo $row['gender'] ?></td>
+                    <td style="display:none;"><?php echo $row['description'] ?></td>
+                    <td><a href="Profile.php?id=<?php echo $row['id']?>" class="btn btn-default">View Profile</a></td>
+                    <?php if (empty($_SESSION["email"]) == false) { ?>
+                    <td><button type="button" class="btn btn-info editbtn">Edit</button></td>
+                    <td><a href="ARLwebsite.php?delete=<?php echo $row['id']; ?>&type=dog" class="btn btn-danger">Delete</a></td>
+                    <?php } ?>
+                  </tr>
+                <?php endwhile; ?>
+              </tbody>
             </table>
+            <div class="pagingSection">
+              <p class="pageLeft"><</p>
+              <p class="pagingNumber"></p>
+              <p class="pageRight">></p>
+            </div>
           </div>
 
           <?php
@@ -221,22 +239,7 @@ endwhile; ?>
 
                     <div class="md-form mb-4">
                       <i class="fas fa-envelope prefix grey-text"></i>
-                      <select name="breed" id="form2" required>
-                        <?php 
-    $allBreeds = file_get_contents("https://dog.ceo/api/breeds/list/all");
-    $allBreedsDecoded = json_decode($allBreeds, true);
-    foreach ($allBreedsDecoded['message'] as $key => $value) {
-      if (empty($value) && count($value) == 0) {
-        echo "<option value=" . ucfirst($key) . ">" . ucfirst($key) . "</option>";
-      }
-      else {
-        foreach ($value as $animal) {
-          echo "<option value=" . ucfirst($animal) . " " . ucfirst($key) . ">" . ucfirst($animal) . " " . ucfirst($key) . "</option>";
-        }
-      }
-    }
-  ?>
-                      </select>
+                      <select name="breed" id="form2" required></select>
                     </div>
                     <div class="md-form mb-4">
                       <i class="fas fa-envelope prefix grey-text"></i>
@@ -345,7 +348,87 @@ endwhile; ?>
 <!-- Javascript -->
 <script>
   $(document).ready(function () {
-    $('.editbtn').on('click', function () {
+    var pagingNumber = 1;
+
+    // Set paging number on page load
+    $(".pagingNumber").text(pagingNumber);
+
+    // DOG API CALL
+    async function apiCall() {
+      let option = "";
+      let response = await fetch("https://dog.ceo/api/breeds/list/all");
+      let data = await response.json();
+      for (let [key, value] of Object.entries(data.message)) {
+        if (value !== null && value.length == 0) {
+          option += "<option value=" + key + ">" + key + "</option>";
+        }
+        else {
+          for (let animal of value) {
+            option += "<option value=" + animal + " " + key + ">" + animal + " " + key + "</option>";
+          }
+        } 
+      }
+
+      $("#form2").append(option);
+      return data;
+    }
+    apiCall().then(data => console.log(data));
+
+    // AJAX FOR RECEIVING DATA ASYNCHRONOUSLY
+    $('.searchBarInput').on('input', (e) => {
+      var searchType = $('#searchType').val();
+      var xmlhttp = new XMLHttpRequest();
+      xmlhttp.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+          var response = JSON.parse(this.responseText);
+          populateSearchDataIntoUI(response);
+        }
+      };
+      xmlhttp.open("GET", "AsyncDogSearch.php?q=" + e.target.value + "&t=" + searchType, true);
+      xmlhttp.send();
+    });
+
+    // Populate returned searched data into UI
+    function populateSearchDataIntoUI(response) {
+      var allDataHolder = "";
+      var dataContainer = $('.dataContainer');
+      dataContainer.empty();
+
+      populateTableWithAdminSpecificContent((secondResponse) => {
+        for (var i = 0; i < Object.keys(response).length; i++) {
+        allDataHolder += '<tr class="dataContainer">';
+        allDataHolder += '<td style="display:none">' + response[i].id + "</td>";
+        allDataHolder += '<td><img src="' + response[i].image1 + '" width="200px" height="200px"></td>';
+        allDataHolder += '<td>' + response[i].name + '</td>';
+        allDataHolder += '<td>' + response[i].breed + '</td>';
+        allDataHolder += '<td>' + response[i].age + '</td>';
+        allDataHolder += '<td>' + response[i].gender + '</td>';
+        allDataHolder += '<td><a href="Profile.php?id=' + response[i].id + '" class="btn btn-default">View Profile</a></td>';
+        if (secondResponse == "true"){
+          allDataHolder += '<td><button type="button" class="btn btn-info editbtn">Edit</a></td>';
+          allDataHolder += '<td><a href="ARLwebsite.php?delete=' + response[i].id + '&type=dog" class="btn btn-danger">Delete</a></td>';
+        }
+        allDataHolder += "</tr>";
+      }
+
+      dataContainer.append(allDataHolder);
+      });
+    }
+
+    // Check if session is set
+    function populateTableWithAdminSpecificContent(callback) {
+      var xmlhttp = new XMLHttpRequest();
+      xmlhttp.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+          callback(this.responseText);
+        }
+      };
+      xmlhttp.open("GET", "CheckSession.php", true);
+      xmlhttp.send();
+    }
+
+    // EDIT BUTTON FUNCTIONALITY
+    $(document).on('click', '.editbtn', function () {
       $tr = $(this).closest('tr');
 
       var data = $tr.children("td").map(function () {

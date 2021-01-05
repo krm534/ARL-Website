@@ -17,7 +17,7 @@ require_once("DatabaseConnection.php");
 <html lang="en">
 
 <head>
-  <title>Laurel Animal Rescue League </title>
+  <title>Laurel Animal Rescue League</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
@@ -144,7 +144,7 @@ require_once("DatabaseConnection.php");
       </div>
       <div class="collapse navbar-collapse" id="myNavbar">
         <ul class="nav navbar-nav">
-          <li class="active">
+          <li>
             <a href="index.php">Home</a>
           </li>
           <li>
@@ -188,7 +188,7 @@ if(isset($_GET['id'])){
  $id = $_GET['id'];
 
  // Get resulting animal from database
- $result = $mysqli->query("SELECT * FROM animals WHERE id=$id") or die($mysqli->error());
+ $result = $mysqli->query("SELECT * FROM animals WHERE id=$id") or die($mysqli->error);
  $row = $result->fetch_assoc();
 }
 else{
